@@ -341,9 +341,11 @@ func (w *window) processResized(width, height int) {
 		return
 	}
 
-	w.RunWithContext(func() {
-		w.platformResize(canvasSize)
-	})
+	// The GL context is taken by the platform that needs it. On Linux and the
+	// BSDs platformResize only lays out the canvas, and making the context
+	// current for each of the dozens of resize events a drag delivers cost
+	// about 7 ms apiece on NVIDIA: glfwPollEvents stalled for up to 1.5 s.
+	w.platformResize(canvasSize)
 }
 
 func (w *window) processFrameSized(width, height int) {

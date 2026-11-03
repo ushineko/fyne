@@ -11,6 +11,8 @@ func (w *window) platformResize(canvasSize fyne.Size) {
 		return
 	}
 
-	w.canvas.Resize(canvasSize)
-	d.repaintWindow(w)
+	w.RunWithContext(func() {
+		w.canvas.Resize(canvasSize)
+		d.repaintWindow(w)
+	})
 }
