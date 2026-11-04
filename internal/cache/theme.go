@@ -5,11 +5,10 @@ import (
 	"sync/atomic"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/internal/async"
 )
 
 var (
-	overrides     async.Map[fyne.CanvasObject, *overrideScope]
+	overrides     overrideMap
 	overrideCount atomic.Uint32
 )
 

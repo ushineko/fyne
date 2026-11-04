@@ -1,6 +1,8 @@
 package container
 
 import (
+	"weak"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/internal/cache"
 	intTheme "fyne.io/fyne/v2/internal/theme"
@@ -69,19 +71,25 @@ func (t *ThemeOverride) SetDeviceIsMobile(on bool) {
 	t.Refresh()
 }
 
+// featureTheme holds its override weakly. Every object the override covers
+// keeps this theme in the theme cache, and a strong pointer back would keep the
+// override and all its content alive for as long as any one of them was cached.
 type featureTheme struct {
 	fyne.Theme
 
-	over *ThemeOverride
+	over weak.Pointer[ThemeOverride]
 }
 
 func addFeatures(th fyne.Theme, o *ThemeOverride) fyne.Theme {
-	return &featureTheme{Theme: th, over: o}
+	return &featureTheme{Theme: th, over: weak.Make(o)}
 }
 
 func (f *featureTheme) Feature(n intTheme.FeatureName) any {
 	if n == intTheme.FeatureNameDeviceIsMobile {
-		return f.over.mobile
+		if o := f.over.Value(); o != nil {
+			return o.mobile
+		}
+		return false
 	}
 
 	return nil
