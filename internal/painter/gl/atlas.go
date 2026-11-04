@@ -60,7 +60,7 @@ func (p *painter) flushQuads() {
 	p.UpdateVertexArray(prog, attrVertex, 2, glyphVertexFloats, 0)
 	p.UpdateVertexArray(prog, attrVertexTextureCoordinates, 2, glyphVertexFloats, 2)
 	p.UpdateVertexArray(prog, attrVertexColor, 4, glyphVertexFloats, 4)
-	p.ctx.BlendFunc(srcAlpha, oneMinusSrcAlpha)
+	p.ctx.BlendFunc(one, oneMinusSrcAlpha)
 	p.ctx.ActiveTexture(texture0)
 	p.ctx.BindTexture(texture2D, p.atlasTex)
 	p.ctx.DrawArrays(triangles, 0, vertices)

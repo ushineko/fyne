@@ -23,6 +23,9 @@ void main() {
     if (coverage <= 0.0)
         discard;
 
-    // Straight alpha, for the blend function the shape shaders use.
-    gl_FragColor = vec4(fragColor.rgb, fragColor.a * coverage);
+    // Premultiplied, as text was before the atlas: straight alpha would also
+    // blend the framebuffer's alpha with itself, and a translucent window would
+    // show the desktop through the edges of every glyph.
+    float alpha = fragColor.a * coverage;
+    gl_FragColor = vec4(fragColor.rgb * alpha, alpha);
 }
