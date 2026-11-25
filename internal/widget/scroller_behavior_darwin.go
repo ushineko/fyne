@@ -1,4 +1,4 @@
-//go:build !ci && darwin && !ios && !iossimulator
+//go:build !ci && darwin && !ios && !iossimulator && cgo
 
 package widget
 
