@@ -203,6 +203,11 @@ func ClearFontCache() {
 
 	runBufferMut.Lock()
 	clear(shapeCache)
+	// The shaper keeps a plan for every face it has shaped with and never lets
+	// one go, and each face holds its whole parsed font. The faces loaded after
+	// this clear are new ones, so a kept shaper would hold every set before
+	// them: a parsed font set per settings change.
+	shaper = &shaping.HarfbuzzShaper{}
 	runBufferMut.Unlock()
 }
 
