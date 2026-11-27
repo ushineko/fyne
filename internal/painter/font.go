@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"unicode"
 
 	"github.com/go-text/render"
@@ -195,8 +196,14 @@ func CachedFontFace(style fyne.TextStyle, source fyne.Resource, o fyne.CanvasObj
 	return val
 }
 
+// fontGeneration counts ClearFontCache calls. A cache outside this file that
+// holds faces, such as a painter's glyph atlas, compares it with the count it
+// last saw to learn that every face it holds is stale.
+var fontGeneration atomic.Uint64
+
 // ClearFontCache is used to remove cached fonts in the case that we wish to re-load Font faces
 func ClearFontCache() {
+	fontGeneration.Add(1)
 	fontCache.Clear()
 	fontCustomCache.Clear()
 	parsedFonts.Clear()

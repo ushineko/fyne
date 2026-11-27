@@ -87,6 +87,11 @@ type GlyphAtlas struct {
 	// resets counts atlas resets, which is how a string being resolved notices
 	// that the slots it already has went stale.
 	resets int
+	// generation is the font cache generation the cached faces came from. Both
+	// caches are keyed by faces, and each face holds its whole parsed font, so
+	// once the font cache is cleared they are emptied rather than left to pin
+	// every font set loaded before.
+	generation uint64
 
 	// whiteX and whiteY locate a solid 3x3 block, which lets a plain filled
 	// rectangle ride the glyph batch as a quad with a constant texture
@@ -108,6 +113,10 @@ type GlyphAtlas struct {
 // texture path instead: a character the shaper found no glyph for, or a glyph
 // a coverage atlas cannot hold, such as a colour emoji.
 func (a *GlyphAtlas) TextQuads(dst []GlyphQuad, text *canvas.Text, pos fyne.Position, pixScale, minX, maxX float32, tex AtlasTexture) ([]GlyphQuad, bool) {
+	if gen := fontGeneration.Load(); gen != a.generation {
+		a.forgetFaces(tex)
+		a.generation = gen
+	}
 	glyphs, ok := a.shape(text, pixScale)
 	if !ok {
 		return dst, false
@@ -294,11 +303,28 @@ func (a *GlyphAtlas) place(w, h int, tex AtlasTexture) (x, y int, ok bool) {
 		a.packer.size = side * 2
 		tex.ResizeAtlas(a.packer.size)
 	}
+	a.empty()
+	return a.packer.add(w, h)
+}
+
+// forgetFaces drops every shaped string and glyph, all of them from faces the
+// font cache no longer hands out, and starts the texture again from empty.
+// Quads already queued are drawn first, while the texture still holds them.
+func (a *GlyphAtlas) forgetFaces(tex AtlasTexture) {
+	if len(a.entries) == 0 && len(a.shaped) == 0 {
+		return
+	}
+	tex.FlushGlyphs()
+	a.empty()
+	clear(a.shaped)
+}
+
+// empty forgets where every glyph is, leaving the texture's space free.
+func (a *GlyphAtlas) empty() {
 	a.packer.reset()
 	clear(a.entries)
 	a.whiteOK = false
 	a.resets++
-	return a.packer.add(w, h)
 }
 
 // shapedKey identifies one shaped string: the text and everything else the
