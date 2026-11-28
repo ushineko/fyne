@@ -206,6 +206,13 @@ func ClearFontCache() {
 	fontGeneration.Add(1)
 	fontCache.Clear()
 	fontCustomCache.Clear()
+	// Parsed fonts are kept one clear longer, so a theme switched back and forth
+	// reuses them, while a font no theme has used since the last clear goes.
+	parsedFontsPrev.Clear()
+	parsedFonts.Range(func(res fyne.Resource, ft *font.Font) bool {
+		parsedFontsPrev.Store(res, ft)
+		return true
+	})
 	parsedFonts.Clear()
 
 	runBufferMut.Lock()
@@ -309,6 +316,10 @@ func loadMeasureFont(data fyne.Resource) *font.Face {
 	shared := hashable(data)
 	if shared {
 		if ft, ok := parsedFonts.Load(data); ok {
+			return font.NewFace(ft)
+		}
+		if ft, ok := parsedFontsPrev.Load(data); ok {
+			parsedFonts.Store(data, ft)
 			return font.NewFace(ft)
 		}
 	}
@@ -713,6 +724,13 @@ var (
 	// includes the fallback and emoji fonts, and parsing the emoji font alone
 	// takes several MB, so parsing per style multiplied that.
 	parsedFonts async.Map[fyne.Resource, *font.Font]
+	// parsedFontsPrev holds what parsedFonts held before the last
+	// ClearFontCache. A settings change clears the font cache, and parsing the
+	// default faces again costs milliseconds and megabytes, though the fonts
+	// rarely change: a font used again is taken from here. Keying by resource
+	// identity cannot tell a theme that makes a new resource per call from a new
+	// font, so the cache is bounded by clears rather than kept for good.
+	parsedFontsPrev async.Map[fyne.Resource, *font.Font]
 )
 
 type noopLogger struct{}
